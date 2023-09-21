@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
+import { HydratedDocument, Types } from 'mongoose';
 
-export type UserDocument = HydratedDocument<User>;
+export type UserDocument = HydratedDocument<User & Document>;
 
 @Schema({
   timestamps: true,
@@ -33,10 +33,10 @@ export class User {
   @Prop({ default: '' })
   profilePic: string;
 
-  @Prop({ default: '' })
+  @Prop({})
   followers: string[];
 
-  @Prop({ default: '' })
+  @Prop({})
   following: string[];
 
   @Prop({ default: '' })
@@ -45,7 +45,7 @@ export class User {
 
 export const UserModel = SchemaFactory.createForClass(User);
 
-UserModel.pre('save', async function (next) {
+UserModel.pre<User>('save', async function (next) {
   const user = this as UserDocument;
 
   if (user.isModified('password')) {

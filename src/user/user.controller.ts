@@ -12,6 +12,8 @@ import { UserService } from './user.service';
 import { Serialize } from 'src/utils/interceptors/serialize.interceptor';
 import { AuthenticationGuard } from 'src/utils/guards/authentication.guard';
 import { Request } from 'express';
+import { CurrentUser } from 'src/utils/decorator/current-user.decorator';
+import { User } from './model/user.model';
 
 @Controller('users')
 export class UserController {
@@ -31,8 +33,8 @@ export class UserController {
 
   @UseGuards(AuthenticationGuard)
   @Post('/follow/:id')
-  followUnFollow(@Param() { id }: { id: string }, @Req() req: Request) {
-    return this.userService.followUnFollow(id, req);
+  followUnFollow(@Param() { id }: { id: string }, @CurrentUser() user: User) {
+    return this.userService.followUnFollow(id, user);
   }
 
   @Serialize(ResponseUserDto)

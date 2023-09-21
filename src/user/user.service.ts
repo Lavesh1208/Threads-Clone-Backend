@@ -49,12 +49,10 @@ export class UserService {
     return { ...user.toObject(), token };
   }
 
-  async followUnFollow(id: string, req: Request) {
+  async followUnFollow(id: string, currentUser: User) {
     const userToModify = await this.userModel.findById(id);
 
     if (!userToModify) throw new NotFoundException('User not found.');
-
-    const currentUser = req.user;
 
     if (id === currentUser._id.toString())
       throw new NotAcceptableException('You cannot follow yourself.');
@@ -62,19 +60,23 @@ export class UserService {
     const isFollowing = currentUser.following.includes(id);
 
     if (isFollowing) {
-      await this.userModel.findByIdAndUpdate(req.user._id, {
+      await this.userModel.findByIdAndUpdate(currentUser._id, {
         $pull: { following: id },
       });
       await this.userModel.findByIdAndUpdate(id, {
-        $pull: { followers: req.user._id },
+        $pull: { followers: currentUser._id },
       });
+
+      return 'User unfollowed successfully';
     } else {
-      await this.userModel.findByIdAndUpdate(req.user._id, {
+      await this.userModel.findByIdAndUpdate(currentUser._id, {
         $push: { following: id },
       });
       await this.userModel.findByIdAndUpdate(id, {
-        $push: { followers: req.user._id },
+        $push: { followers: currentUser._id },
       });
+
+      return 'User followed successfully';
     }
   }
 
