@@ -2,11 +2,18 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { v2 as cloudinary } from 'cloudinary';
 
 async function bootstrap() {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: ['*', 'http://127.0.0.1:5173'],
+    origin: ['*', 'http://localhost:5173'],
     credentials: true,
     allowedHeaders: [
       'Accept',

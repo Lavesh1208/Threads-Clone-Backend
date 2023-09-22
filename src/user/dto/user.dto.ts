@@ -1,5 +1,5 @@
 import { Exclude, Expose } from 'class-transformer';
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import mongoose from 'mongoose';
 
 export class CreateUserDto {
@@ -24,14 +24,6 @@ export class CreateUserDto {
   profilePic: string;
 
   @IsOptional()
-  @IsArray()
-  followers: string[];
-
-  @IsOptional()
-  @IsArray()
-  following: string[];
-
-  @IsOptional()
   @IsString()
   bio: string;
 }
@@ -47,11 +39,15 @@ export class LoginUserDto {
 }
 
 export class UpdateUserDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   name: string;
 
-  @IsNotEmpty()
+  @IsOptional()
+  @IsString()
+  username: string;
+
+  @IsOptional()
   @IsString()
   email: string;
 
@@ -59,17 +55,24 @@ export class UpdateUserDto {
   @IsString()
   password: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  avatar: string;
+  profilePic: string;
+
+  @IsOptional()
+  @IsString()
+  bio: string;
 }
 
 export class ResponseUserDto {
   @Expose()
-  _id?: mongoose.Types.ObjectId;
+  _id: mongoose.Types.ObjectId;
 
   @Expose()
   name: string;
+
+  @Expose()
+  username: string;
 
   @Expose()
   email: string;
@@ -90,10 +93,10 @@ export class ResponseUserDto {
   token: string;
 
   @Expose()
-  createdAt?: Date;
+  createdAt: Date;
 
   @Expose()
-  updatedAt?: Date;
+  updatedAt: Date;
 
   @Exclude()
   password: string;
