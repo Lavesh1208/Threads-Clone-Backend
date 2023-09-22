@@ -92,10 +92,9 @@ export class UserService {
       throw new ForbiddenException('You cannot update this user');
 
     if (updateUserDto.profilePic) {
-      if (updateUserDto.profilePic) {
-        await cloudinary.uploader.destroy(
-          user.profilePic.split('/').pop().split('.')[0],
-        );
+      if (updateUserDto.profilePic && user.profilePic > '') {
+        const public_id = user.profilePic.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(public_id);
       }
       const uploadedResponse = await cloudinary.uploader.upload(
         updateUserDto.profilePic,
