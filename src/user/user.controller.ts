@@ -53,7 +53,7 @@ export class UserController {
 
   @Serialize(ResponseUserDto)
   @Get('/profile/:username')
-  findUserById(@Param('username') username: string) {
+  findUserByUsername(@Param('username') username: string) {
     return this.userService.findUserByUsername(username);
   }
 }

@@ -21,6 +21,16 @@ export class UserService {
     private readonly configService: ConfigService,
   ) {}
 
+  async findUserByUsername(username: string) {
+    const user = await this.userModel.findOne({ username }).lean();
+    if (!user) throw new NotFoundException('User not found.');
+    return user;
+  }
+
+  async findUserById(_id: string): Promise<User> {
+    return this.userModel.findById(_id).lean();
+  }
+
   async createUser(createUserDto: CreateUserDto) {
     const userExists = await this.userModel.findOne({
       email: createUserDto.email,
@@ -47,37 +57,6 @@ export class UserService {
     const token = await this.generateToken(user);
 
     return { ...user.toObject(), token };
-  }
-
-  async followUnFollow(id: string, currentUser: User) {
-    const userToModify = await this.userModel.findById(id);
-
-    if (!userToModify) throw new NotFoundException('User not found.');
-
-    if (id === currentUser._id.toString())
-      throw new NotAcceptableException('You cannot follow yourself.');
-
-    const isFollowing = currentUser.following.includes(id);
-
-    if (isFollowing) {
-      await this.userModel.findByIdAndUpdate(currentUser._id, {
-        $pull: { following: id },
-      });
-      await this.userModel.findByIdAndUpdate(id, {
-        $pull: { followers: currentUser._id },
-      });
-
-      return 'User unfollowed successfully';
-    } else {
-      await this.userModel.findByIdAndUpdate(currentUser._id, {
-        $push: { following: id },
-      });
-      await this.userModel.findByIdAndUpdate(id, {
-        $push: { followers: currentUser._id },
-      });
-
-      return 'User followed successfully';
-    }
   }
 
   async updateUser(
@@ -114,14 +93,47 @@ export class UserService {
     return { ...user.toObject(), token };
   }
 
-  async findUserByUsername(username: string) {
-    const user = await this.userModel.findOne({ username });
-    if (!user) throw new NotFoundException('User not found.');
-    return user;
+  async followUnFollow(id: string, currentUser: User) {
+    const userToModify = await this.userModel.findById(id).lean();
+
+    if (!userToModify) throw new NotFoundException('User not found.');
+
+    if (id === currentUser._id.toString())
+      throw new NotAcceptableException('You cannot follow yourself.');
+
+    const isFollowing = currentUser.following.includes(id);
+
+    if (isFollowing) {
+      await this.unfollowUser(currentUser, id);
+      return {
+        message: `You Unfollowed ${userToModify.username}`,
+        following: false,
+      };
+    } else {
+      await this.followUser(currentUser, id);
+      return {
+        message: `Following ${userToModify.username}`,
+        following: true,
+      };
+    }
   }
 
-  async findUserById(_id: string): Promise<User> {
-    return this.userModel.findById(_id);
+  private async followUser(currentUser: User, userId: string) {
+    await this.userModel.findByIdAndUpdate(currentUser._id, {
+      $push: { following: userId },
+    });
+    await this.userModel.findByIdAndUpdate(userId, {
+      $push: { followers: currentUser._id.toHexString() },
+    });
+  }
+
+  private async unfollowUser(currentUser: User, userId: string) {
+    await this.userModel.findByIdAndUpdate(currentUser._id, {
+      $pull: { following: userId },
+    });
+    await this.userModel.findByIdAndUpdate(userId, {
+      $pull: { followers: currentUser._id.toHexString() },
+    });
   }
 
   private generateToken(user: User) {
