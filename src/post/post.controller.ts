@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { User } from 'src/user/model/user.model';
@@ -23,6 +24,11 @@ export class PostController {
     return this.postService.getFeedPosts(currentUser);
   }
 
+  @Get('/user/:username')
+  getUserPosts(@Param('username') username: string) {
+    return this.postService.getUserPosts(username);
+  }
+
   @Get('/:id')
   getPost(@Param('id') id: string) {
     return this.postService.getPost(id);
@@ -39,12 +45,12 @@ export class PostController {
 
   @UseGuards(AuthenticationGuard)
   @Delete('/:id')
-  deletePost(@Param('id') id: string, @CurrentUser() currentUser: User) {
-    return this.postService.deletePost(id, currentUser);
+  deletePost(@Param('id') postId: string, @CurrentUser() currentUser: User) {
+    return this.postService.deletePost(postId, currentUser);
   }
 
   @UseGuards(AuthenticationGuard)
-  @Post('like/:id')
+  @Put('like/:id')
   likeUnLikePost(
     @Param('id') postId: string,
     @CurrentUser() currentUser: User,

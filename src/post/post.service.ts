@@ -4,25 +4,35 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Post, PostDocument } from './model/post.model';
+import { v2 as cloudinary } from 'cloudinary';
 import { Model } from 'mongoose';
+import { User, UserDocument } from 'src/user/model/user.model';
 import { CreatePostDto, ReplyToPostDto } from './dto/post.dto';
-import { User } from 'src/user/model/user.model';
+import { Post, PostDocument } from './model/post.model';
 
 @Injectable()
 export class PostService {
   constructor(
     @InjectModel(Post.name) private readonly postModel: Model<PostDocument>,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
 
   async createPost(createPostDto: CreatePostDto, currentUser: User) {
+    if (createPostDto.img) {
+      const uploadedResponse = await cloudinary.uploader.upload(
+        createPostDto.img,
+      );
+      createPostDto.img = uploadedResponse.secure_url;
+    }
     const newPost = new this.postModel(createPostDto);
     newPost.postedBy = currentUser._id.toString();
     return await newPost.save();
   }
 
   async getPost(id: string) {
-    const post = await this.postModel.findById(id);
+    const post = await this.postModel
+      .findById(id)
+      .populate(['postedBy', 'replies']);
     if (!post) throw new NotFoundException('Post not found.');
     return post;
   }
@@ -36,8 +46,13 @@ export class PostService {
       throw new UnauthorizedException('You cannot delete this post');
     }
 
+    if (post.img && post.img > '') {
+      const public_id = post.img.split('/').pop().split('.')[0];
+      await cloudinary.uploader.destroy(public_id);
+    }
+
     await this.postModel.findByIdAndDelete(id);
-    return 'Post deleted';
+    return { message: 'Post deleted' };
   }
 
   async likeUnLikePost(postId: string, currentUser: User) {
@@ -53,12 +68,12 @@ export class PostService {
         },
       );
 
-      return 'Post unliked successfully';
+      return { message: 'Post unliked successfully', isLiked: false };
     } else {
       post.likes.push(currentUser._id.toString());
       post.save();
 
-      return 'Post liked successfully';
+      return { message: 'Post liked successfully', isLiked: true };
     }
   }
 
@@ -90,8 +105,20 @@ export class PostService {
       .find({
         postedBy: { $in: following },
       })
-      .sort({ createdAt: -1 });
-
+      .sort({ createdAt: -1 })
+      .populate(['postedBy', 'replies']);
     return feedPosts;
+  }
+
+  async getUserPosts(username: string) {
+    const user = await this.userModel.findOne({ username });
+    if (!user) throw new NotFoundException('User not found.');
+
+    const posts = await this.postModel
+      .find({ postedBy: user._id.toHexString() })
+      .sort({ createdAt: -1 })
+      .populate(['postedBy', 'replies']);
+
+    return posts;
   }
 }
