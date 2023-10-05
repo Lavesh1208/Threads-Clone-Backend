@@ -16,7 +16,7 @@ async function bootstrap() {
     rawBody: true,
   });
   app.enableCors({
-    origin: ['*', 'http://localhost:5173'],
+    origin: [process.env.CLIENT_URL, process.env.DEV_CLIENT_URL],
     credentials: true,
     allowedHeaders: [
       'Accept',
